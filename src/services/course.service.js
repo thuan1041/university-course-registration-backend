@@ -578,6 +578,34 @@ const getWaitingList = async (_id) => {
         }
     }
 }
+const getStudentInClass = async (_id) => {  
+    try {
+        const clazz = await Class.findOne({ _id: _id });
+        if (!clazz)
+            return {
+                errCode: 2,
+                message: 'Class is not exists',
+            }
+        const registeredList = clazz.registeredStudents;
+        const registeredListPromises = registeredList.map(async (record) => {
+            return {
+                studentId: record,
+                studentInfo: await getStudentById(record),
+            };
+        });
+        const registeredStudents = await Promise.all(registeredListPromises);
+        return {
+            errCode: 0,
+            message: 'Get registered students successfully',
+            data: registeredStudents,
+        }
+    } catch (error) {
+        return {
+            errCode: 1,
+            message: 'Get registered students failed',
+        }
+    }
+}     
 module.exports = {
     addCourse,
     addMajor,
@@ -591,5 +619,6 @@ module.exports = {
     getSchedules,
     getRegisteredCourse,
     getAllClasses,
-    getWaitingList
+    getWaitingList,
+    getStudentInClass
 }
