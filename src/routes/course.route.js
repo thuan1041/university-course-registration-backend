@@ -29,6 +29,10 @@ const InitRoutesCourse = (router) => {
         .get(courseController.getWaitingList);
     router.route('/getStudentInClass')
         .post(courseController.getStudentInClass);
+    router.route('/getFailedCource')
+        .post(courseController.getFailedCource);
+    router.route('/getCurrenCourse')
+        .post(courseController.getCurrenCourse);
     return router;
 }
 

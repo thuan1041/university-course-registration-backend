@@ -150,24 +150,86 @@ const addClass = async (courseId, major, instructor, maxStudents, waitingStudent
         }
     }
 }
-const getCourceByMajor = async (major) => {
+
+const getCourceByMajor = async (studentId, major) => {
     try {
-        const courses = await Course.find({ major: major })
-        if(courses){
+        const courses = await Course.find({ major: major });
+        const studyStatus = await StudyStatus.findOne({ studentId: studentId });
+
+        if (!studyStatus) {
+            return {
+                errCode: 1,
+                message: 'Study status not found for the student',
+            };
+        }
+
+        const studiedCourses = studyStatus.studiedCourses.map(course => course.course._id.toString());
+        const currentCourses = studyStatus.currentCourses.map(course => course.courseId.toString());
+
+        const filteredCourses = courses.filter(course => 
+            !studiedCourses.includes(course._id.toString()) && 
+            !currentCourses.includes(course._id.toString())
+        );
+
+        return {
+            errCode: 0,
+            message: 'Get courses by major successfully',
+            data: filteredCourses,
+        };
+    } catch (error) {
+        return {
+            errCode: 1,
+            message: 'Get courses by major failed',
+            error: error.message, // Optional: Include error message for debugging
+        };
+    }
+};
+
+const getFailedCource = async (studentId) => {
+    try {
+        const studyStatus = await StudyStatus.findOne({ studentId: studentId });
+        const failedCourses = studyStatus.failedCourses;
+        const failedCoursesPromises = failedCourses.map(async (course) => {
+            const failedCource = course.course;
+            return {
+                failedCource,
+            };
+        });
+        const allFailedCourses = await Promise.all(failedCoursesPromises);
+
+        if(allFailedCourses){
             return {
                 errCode: 0,
-                message: 'Get courses by major successfully',
-                data: courses,
+                message: 'Get failes cources successfully',
+                data: allFailedCourses,
             }
         }
     } catch (error) {
         return {
             errCode: 1,
-            message: 'Get courses by major failed',
+            message: 'Get courses failed',
         }
     }
     
 }
+const getCurrenCourse = async (studentId) => {
+    try {
+        const studyStatus = await StudyStatus.findOne({ studentId: studentId });
+        const currentCourses = studyStatus.currentCourses;
+        return {
+            errCode: 0,
+            message: 'Get current courses successfully',
+            data: currentCourses,
+        }
+    }
+    catch (error) {
+        return {
+            errCode: 1,
+            message: 'Get current courses failed',
+        }
+    }
+}
+
 const getClassByCourse = async (course) => {
     try {
         const classes = await Class.find({ courseId: course })
@@ -345,71 +407,6 @@ const acceptStudentToClass = async (_id, studentId) => {
     }
 }
 
-// const finishCourse = async (_id, studentId, point) => {
-//     try {
-//         const clazz = await Class.findOne({ _id: _id });
-//         if(!clazz)
-//             return {
-//                 errCode: 2,
-//                 message: 'Class is not exists'
-//             }
-//         const registeredStudents = clazz.registeredStudents;
-//         if(registeredStudents.includes(studentId)){
-//             const studyStatus = await StudyStatus.findOne({studentId: studentId});
-//             if(!studyStatus)
-//                 return {
-//                     errCode: 2,
-//                     message: 'Student is not exists'
-//                 };
-//             const course = await Course.findOne({ _id: clazz.courseId });
-//             const credit = course.credit;
-//             //return {clazz, studyStatus, course, credit, result}
-//             if(point >= 5) {
-//                 const studyResult = {
-//                     course: course,
-//                     point: point
-//                 }
-//                 studyStatus.studiedCourses.push(studyResult);
-//                 studyStatus.credit += Number(credit)
-//                 studyStatus.GPA = (studyStatus.GPA + Number(point)) / 2;
-//                 studyStatus.currentCourses = studyStatus.currentCourses.filter(course => course._id != _id);
-//                 const result = await studyStatus.save();
-//                 if(result)
-//                 return {
-//                     errCode: 0,
-//                     message: 'Finish course successfully',
-//                     data: { 
-//                         result : studyStatus.studiedCourses, 
-//                         delete_current: studyStatus.currentCourses,
-//                     }
-//                 }
-//             }
-//             else {
-//                 const studyResult = {
-//                     course: course,
-//                     point: point
-//                 }
-//                 studyStatus.failedCourses.push(studyResult);
-//                 await studyStatus.save();
-//                 return {
-//                     errCode: 6,
-//                     message: 'Failed course',
-//                     data: studyStatus.failedCourses
-//                 }
-//             }
-//         } else {
-//             return {
-//                 errCode: 3,
-//                 message: 'Student is not in class'
-//             }
-//         }
-//     } catch (error) {
-//         return {
-//             errCode: 5,
-//             message: 'Some errors occur, please try again!'
-//         }
-//     }
-// }
 
 const finishCourse = async (_id, studentId, point) => {
     try {
@@ -692,5 +689,7 @@ module.exports = {
     getRegisteredCourse,
     getAllClasses,
     getWaitingList,
-    getStudentInClass
+    getStudentInClass,
+    getFailedCource,
+    getCurrenCourse
 }
