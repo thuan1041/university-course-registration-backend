@@ -4,7 +4,7 @@ const InitRoutesCourse = (router) => {
     router.route('/addCourse')
         .post(courseController.addCourse);
     router.route('/getAllCourses')
-        .get(courseController.getAllCourses);
+        .post(courseController.getAllCourses);
     router.route('/addMajor')
         .post(courseController.addMajor);
     router.route('/addClass')

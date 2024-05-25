@@ -11,7 +11,7 @@ const IntRoutesStudent = (router) => {
     router.route('/resetPassword')
         .put(studentController.resetPassword);
     router.route('/getStudentStatus')
-        .get(studentController.getStudentStatus);
+        .post(studentController.getStudentStatus);
     router.route('/getStatus')
         .get(studentController.getStatus);
     router.route('/getStudyResult')

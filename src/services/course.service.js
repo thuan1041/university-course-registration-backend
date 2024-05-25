@@ -5,7 +5,7 @@ const StudyStatus = require("../config/models/study_status.model");
 import mongoose from 'mongoose';
 import Student from '../config/models/student.model';
 
-const addCourse = async (courseId, name, credit, prerequisiteCourse) => {
+const addCourse = async (courseId, name, credit, prerequisiteCourse, major) => {
     try {
         // return {courseId, name, credit, prerequisiteCourse}
         // check course exists;
@@ -24,6 +24,7 @@ const addCourse = async (courseId, name, credit, prerequisiteCourse) => {
             name: name,
             credit: credit,
             prerequisiteCourse: prerequisiteCourse,
+            major: major,
             status: true
         }
         // push data to database
@@ -344,6 +345,72 @@ const acceptStudentToClass = async (_id, studentId) => {
     }
 }
 
+// const finishCourse = async (_id, studentId, point) => {
+//     try {
+//         const clazz = await Class.findOne({ _id: _id });
+//         if(!clazz)
+//             return {
+//                 errCode: 2,
+//                 message: 'Class is not exists'
+//             }
+//         const registeredStudents = clazz.registeredStudents;
+//         if(registeredStudents.includes(studentId)){
+//             const studyStatus = await StudyStatus.findOne({studentId: studentId});
+//             if(!studyStatus)
+//                 return {
+//                     errCode: 2,
+//                     message: 'Student is not exists'
+//                 };
+//             const course = await Course.findOne({ _id: clazz.courseId });
+//             const credit = course.credit;
+//             //return {clazz, studyStatus, course, credit, result}
+//             if(point >= 5) {
+//                 const studyResult = {
+//                     course: course,
+//                     point: point
+//                 }
+//                 studyStatus.studiedCourses.push(studyResult);
+//                 studyStatus.credit += Number(credit)
+//                 studyStatus.GPA = (studyStatus.GPA + Number(point)) / 2;
+//                 studyStatus.currentCourses = studyStatus.currentCourses.filter(course => course._id != _id);
+//                 const result = await studyStatus.save();
+//                 if(result)
+//                 return {
+//                     errCode: 0,
+//                     message: 'Finish course successfully',
+//                     data: { 
+//                         result : studyStatus.studiedCourses, 
+//                         delete_current: studyStatus.currentCourses,
+//                     }
+//                 }
+//             }
+//             else {
+//                 const studyResult = {
+//                     course: course,
+//                     point: point
+//                 }
+//                 studyStatus.failedCourses.push(studyResult);
+//                 await studyStatus.save();
+//                 return {
+//                     errCode: 6,
+//                     message: 'Failed course',
+//                     data: studyStatus.failedCourses
+//                 }
+//             }
+//         } else {
+//             return {
+//                 errCode: 3,
+//                 message: 'Student is not in class'
+//             }
+//         }
+//     } catch (error) {
+//         return {
+//             errCode: 5,
+//             message: 'Some errors occur, please try again!'
+//         }
+//     }
+// }
+
 const finishCourse = async (_id, studentId, point) => {
     try {
         const clazz = await Class.findOne({ _id: _id });
@@ -362,7 +429,6 @@ const finishCourse = async (_id, studentId, point) => {
                 };
             const course = await Course.findOne({ _id: clazz.courseId });
             const credit = course.credit;
-            //return {clazz, studyStatus, course, credit, result}
             if(point >= 5) {
                 const studyResult = {
                     course: course,
@@ -372,6 +438,8 @@ const finishCourse = async (_id, studentId, point) => {
                 studyStatus.credit += Number(credit)
                 studyStatus.GPA = (studyStatus.GPA + Number(point)) / 2;
                 studyStatus.currentCourses = studyStatus.currentCourses.filter(course => course._id != _id);
+                clazz.registeredStudents = clazz.registeredStudents.filter(id => id !== studentId);
+                await clazz.save();
                 const result = await studyStatus.save();
                 if(result)
                 return {
@@ -380,6 +448,7 @@ const finishCourse = async (_id, studentId, point) => {
                     data: { 
                         result : studyStatus.studiedCourses, 
                         delete_current: studyStatus.currentCourses,
+                        student_in_class: clazz.registeredStudents
                     }
                 }
             }
@@ -390,6 +459,8 @@ const finishCourse = async (_id, studentId, point) => {
                 }
                 studyStatus.failedCourses.push(studyResult);
                 await studyStatus.save();
+                clazz.registeredStudents = clazz.registeredStudents.filter(id => id !== studentId);
+                await clazz.save();
                 return {
                     errCode: 6,
                     message: 'Failed course',
@@ -521,7 +592,8 @@ const getRegisteredCourse = async (studentId) => {
 };
 const getAllClasses = async () => {
     try {
-        const classes = await Class.find();
+        // const classes = await Class.find();
+        const classes = await Class.find().populate('courseId', 'name');
         if (classes)
             return {
                 errCode: 0,
