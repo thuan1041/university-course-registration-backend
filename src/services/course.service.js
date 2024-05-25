@@ -189,21 +189,55 @@ const getFailedCource = async (studentId) => {
     try {
         const studyStatus = await StudyStatus.findOne({ studentId: studentId });
         const failedCourses = studyStatus.failedCourses;
-        const failedCoursesPromises = failedCourses.map(async (course) => {
-            const failedCource = course.course;
-            return {
-                failedCource,
-            };
-        });
-        const allFailedCourses = await Promise.all(failedCoursesPromises);
+        const failedCoursesList = failedCourses.map(course => course.course);
+        //Xóa trùng lặp
+        // {
+        //     "_id": "66275e06c5bae68b2606b620",
+        //     "courseId": 1,
+        //     "name": "Hệ cơ sở dữ liệu",
+        //     "credit": 3,
+        //     "prerequisiteCourse": [],
+        //     "status": true,
+        //     "createdAt": "2024-04-23T07:06:46.777Z",
+        //     "updatedAt": "2024-04-23T07:06:46.777Z",
+        //     "__v": 0,
+        //     "major": "66265ec3bd56e143ee8eb1c1"
+        // },
+        // {
+        //     "_id": "66275e06c5bae68b2606b620",
+        //     "courseId": 1,
+        //     "name": "Hệ cơ sở dữ liệu",
+        //     "credit": 3,
+        //     "prerequisiteCourse": [],
+        //     "status": true,
+        //     "createdAt": "2024-04-23T07:06:46.777Z",
+        //     "updatedAt": "2024-04-23T07:06:46.777Z",
+        //     "__v": 0,
+        //     "major": "66265ec3bd56e143ee8eb1c1"
+        // },
+        // {
+        //     "_id": "66275e06c5bae68b2606b620",
+        //     "courseId": 1,
+        //     "name": "Hệ cơ sở dữ liệu",
+        //     "credit": 3,
+        //     "prerequisiteCourse": [],
+        //     "status": true,
+        //     "createdAt": "2024-04-23T07:06:46.777Z",
+        //     "updatedAt": "2024-04-23T07:06:46.777Z",
+        //     "__v": 0,
+        //     "major": "66265ec3bd56e143ee8eb1c1"
+        // },
+        //Xóa trùng lặp
+        //failedCoursesList = failedCoursesList.filter((course, index) => failedCourses.indexOf(course) === index);
 
-        if(allFailedCourses){
-            return {
-                errCode: 0,
-                message: 'Get failes cources successfully',
-                data: allFailedCourses,
-            }
-        }
+        const uniqueCoursesMap = new Map(failedCoursesList.map(course => [course._id.toString(), course]));
+        const uniqueCoursesList = Array.from(uniqueCoursesMap.values());
+
+        return {
+            errCode: 0,
+            message: 'Get failed courses successfully',
+            data: uniqueCoursesList,
+        };
     } catch (error) {
         return {
             errCode: 1,
